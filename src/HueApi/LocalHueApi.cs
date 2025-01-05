@@ -1,92 +1,18 @@
-using HueApi.Models;
 using HueApi.Models.Clip;
 using HueApi.Models.Exceptions;
-using HueApi.Models.Requests;
 using HueApi.Models.Responses;
-using System;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
 using System.Net.Http.Json;
-using System.Security;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace HueApi
 {
-  public class LocalHueApi : BaseHueApi
+
+  public class LocalHueApi
   {
-    protected const string KeyHeaderName = "hue-application-key";
-
-    public event EventStreamMessage? OnEventStreamMessage;
-    private CancellationTokenSource? eventStreamCancellationTokenSource;
-
-    protected const string EventStreamUrl = "eventstream/clip/v2";
-
-    private string ip;
-    private string? key;
-
-    public LocalHueApi(string ip, string? key, HttpClient? client = null)
-    {
-      this.ip = ip;
-      this.key = key;
-
-      client = GetConfiguredHttpClient(client);
-    }
-
-  
-
-    public async Task StartEventStream(HttpClient? client = null, CancellationToken? cancellationToken = null)
-    {
-      this.eventStreamCancellationTokenSource?.Cancel();
-
-      if (cancellationToken.HasValue)
-        this.eventStreamCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Value);
-      else
-        this.eventStreamCancellationTokenSource = new CancellationTokenSource();
-
-      var cancelToken = this.eventStreamCancellationTokenSource.Token;
-
-      using (HttpClient infiniteHttpClient = GetConfiguredHttpClient(client, Timeout.InfiniteTimeSpan))
-      {
-
-        while (!cancelToken.IsCancellationRequested) //Auto retry on stop
-        {
-          try
-          {
-            using (var streamReader = new StreamReader(await infiniteHttpClient.GetStreamAsync(EventStreamUrl, cancelToken)))
-            {
-              while (!streamReader.EndOfStream)
-              {
-                var jsonMsg = await streamReader.ReadLineAsync();
-                //Console.WriteLine($"Received message: {message}");
-
-                if (jsonMsg != null)
-                {
-                  var data = System.Text.Json.JsonSerializer.Deserialize<List<EventStreamResponse>>(jsonMsg);
-
-                  if (data != null && data.Any())
-                  {
-                    OnEventStreamMessage?.Invoke(this.ip, data);
-                  }
-                }
-              }
-            }
-          }
-          catch(TaskCanceledException ex)
-          {
-            //Ignore
-          }
-        }
-      }
-
-    }
-
-    public void StopEventStream()
-    {
-      this.eventStreamCancellationTokenSource?.Cancel();
-    }
-
-
-
     /// <summary>
     /// Register your <paramref name="applicationName"/> and <paramref name="deviceName"/> at the Hue Bridge.
     /// </summary>
@@ -171,31 +97,5 @@ namespace HueApi
 
       return null;
     }
-
-    private HttpClient GetConfiguredHttpClient(HttpClient? client = null, TimeSpan? timeout = null)
-    {
-      if (client == null)
-      {
-        var handler = new HttpClientHandler()
-        {
-          ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        };
-
-        client = new HttpClient(handler);
-      }
-
-      if(timeout.HasValue)
-        client.Timeout= timeout.Value;
-
-      client.BaseAddress = new Uri($"https://{ip}/");
-
-      if (!string.IsNullOrEmpty(key))
-        client.DefaultRequestHeaders.Add(KeyHeaderName, key);
-
-      this.client = client;
-      return client;
-    }
-
-
   }
 }
