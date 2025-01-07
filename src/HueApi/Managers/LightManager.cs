@@ -83,5 +83,5 @@ namespace HueApi.Managers
   internal class TemperatureManager : ResourceManager<TemperatureResource, object, object>, ITemperatureManager
   {
     public TemperatureManager(IHueApiClient api) : base(api) { }
-  }
+  }  
 }

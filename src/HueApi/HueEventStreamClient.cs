@@ -41,7 +41,10 @@ namespace HueApi
       _jsonSerializerOptions = new JsonSerializerOptions
       {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNameCaseInsensitive = true // Important for Hue API!
+        PropertyNameCaseInsensitive = true, // Important for Hue API!
+        
+        //NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        //DefaultIgnoreCondition = JsonIgnoreCondition.Always
       };
     }
 
