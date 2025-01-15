@@ -1,7 +1,5 @@
-using HueApi.Abstractions;
 using HueApi.Managers;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Security;
 
